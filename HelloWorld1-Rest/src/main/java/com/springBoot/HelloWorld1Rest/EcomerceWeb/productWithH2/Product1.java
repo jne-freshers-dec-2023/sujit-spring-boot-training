@@ -18,7 +18,7 @@ public class Product1 {
     private int price;
 
     public  Product1(){
-        
+
     }
 
     public Product1(int id, String name, int price) {
