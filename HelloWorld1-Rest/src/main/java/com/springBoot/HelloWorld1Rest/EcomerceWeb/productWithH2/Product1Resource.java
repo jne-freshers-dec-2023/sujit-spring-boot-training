@@ -1,6 +1,8 @@
 package com.springBoot.HelloWorld1Rest.EcomerceWeb.productWithH2;
 
 import com.springBoot.HelloWorld1Rest.EcomerceWeb.product.UserNotFoundException;
+import com.springBoot.HelloWorld1Rest.EcomerceWeb.productWithH2.ordersPack.Orders;
+import com.springBoot.HelloWorld1Rest.EcomerceWeb.productWithH2.ordersPack.OrdersRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
@@ -19,16 +21,18 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 public class Product1Resource {
     @Autowired
-    private ProductReposiroty reposiroty;
+    private ProductReposiroty productReposiroty;
+    @Autowired
+    private OrdersRepository ordersRepository;
 
     @GetMapping(path ="/product1/products")
     public List<Product1> getAllProducts(){
-        return reposiroty.findAll();
+        return productReposiroty.findAll();
     }
 
     @GetMapping(path ="/product1/products/{id}")
     public EntityModel<Product1> getProduct(@PathVariable int id){
-        Optional<Product1> product = reposiroty.findById(id);
+        Optional<Product1> product = productReposiroty.findById(id);
         if(product.isEmpty()){
             throw new UserNotFoundException("id: "+id);
         }
@@ -39,16 +43,39 @@ public class Product1Resource {
     }
 
     @PostMapping(path ="/product1/products")
-    public ResponseEntity<Product1> createProduct(@Valid @RequestBody Product1 product){
-        Product1 returned = reposiroty.save(product);
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}").buildAndExpand(returned.getId()).toUri();
-        return ResponseEntity.created(location).build();
+    public Product1 createProduct(@Valid @RequestBody Product1 product){
+        Product1 returned = productReposiroty.save(product);
+//        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+//                .path("/{id}").buildAndExpand(returned.getId()).toUri();
+//        return ResponseEntity.created(location).build();
+        return product;
     }
 
     @DeleteMapping(path ="/product1/products/{id}")
     public void deleteProduct(@PathVariable int id){
-        reposiroty.deleteById(id);
+        productReposiroty.deleteById(id);
     }
 
+    @GetMapping(path ="/product1/products/{id}/orders")
+    public List<Orders> getOrdersOfProduct(@PathVariable int id){
+        Optional<Product1> product = productReposiroty.findById(id);
+        if(product.isEmpty()){
+            throw new UserNotFoundException("id: "+id);
+        }
+       return product.get().getPosts();
+    }
+
+
+    @PostMapping(path ="/product1/products/{id}/orders")
+    public ResponseEntity<Object> postOrdersOfProduct(@PathVariable int id, @Valid @RequestBody Orders order){
+        Optional<Product1> product = productReposiroty.findById(id);
+        if(product.isEmpty()){
+            throw new UserNotFoundException("id: "+id);
+        }
+        order.setProduct(product.get());
+        Orders savedOrder = ordersRepository.save(order);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}").buildAndExpand(savedOrder.getId()).toUri();
+        return ResponseEntity.created(location).build();
+    }
 }
